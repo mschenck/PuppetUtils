@@ -1,0 +1,29 @@
+puppet_init.sh  This is the puppet first run script.  By default CoreAMIs are 
+                not configured to start puppet automatically.  So, 
+                puppet_init.sh first attempts to contact the puppet server 5 
+                times (waiting for user-data to register), Then if a catalog can
+                be compiled puppet_init.sh first pulls the base yum repository 
+                then completes a catalog run.   
+
+Node_Terminus   Upon a puppetd request to the puppet server, instead of looking
+                to file-based puppet node configuration, Node_Terminus.py
+                queries the AWS REST API for all instances and creates YAML to 
+                be used for catalog compilation
+
+NOTE:           The following cron job should be used to clear out old puppet 
+                private keys (for nodes) to clean-up for new instances using old
+                instance private DNS entries.  Set to run every hour and remove
+                keys over 1 day old.
+
+1 * * * * find /var/lib/puppet/ssl/ca/signed/ -type f -mtime +1 -exec rm -f {}\;
+
+id_to_hostname.rb   (A puppet function) used to determine the index of an EC2 
+                Instance ID in a particular Auto Scale Group.  The result is an 
+                FQDN of "domain prefix" + index + "domain suffix" which can be 
+                used to associate an Elastic IP.
+
+Example of use:
+    $wwwfqdn = id_to_hostname("www-asg", "www", $ec2_instance_id, ".example.com")
+
+NOTE:           On CentOS running Puppet 0.25.X This file should be placed here:
+    /usr/lib/ruby/site_ruby/1.8/puppet/parser/functions/id_to_hostname.rb 

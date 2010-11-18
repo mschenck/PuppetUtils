@@ -1,0 +1,69 @@
+#!/usr/bin/env python2.6
+
+import os
+import simplejson
+import tarfile
+import urllib2
+import logging
+import subprocess
+
+
+def execute_shell(cmd, cwd=os.getcwd(), errorMessage=""):
+    """Execute a command from shell, exit the program if the command errors out and print an error errorMessage"""
+    logging.info("Executing: %s from %s" % (cmd, cwd))    
+    p = subprocess.Popen(cmd, shell=True, cwd=cwd, stderr=subprocess.STDOUT)
+    # TODO redirect stdout/stderr to our own stdout/stderr, or at least read and display it if process returns != 0
+    if (p.wait() != 0):
+        logging.error(errorMessage)
+        raise Exception(errorMessage)
+
+
+def get_user_data():
+    logging.info('Attempting to fetch user data for this instance')
+    try:
+        user_data_string = urllib2.urlopen('http://169.254.169.254/latest/user-data').read()
+	logging.info('Fetched the following user data')
+        logging.info(user_data_string)
+    except urllib2.HTTPError, e:
+        if e.code == 404: # Instance has no user data
+            logging.warn('Instance was started with no user data')
+            return {}
+        raise e
+
+    return  simplejson.loads(user_data_string)
+
+
+def wget( url ):
+    filename = url.split('/')[-1]
+    logging.info( "Pulling down URL [%s] to file [%s]" % (url, filename) )
+    fp = open( filename, 'w' )
+    fp.write( urllib2.urlopen( url ).read() )
+    fp.close()
+    return filename
+
+def untar( file ):
+    if tarfile.is_tarfile( file ):
+        tar = tarfile.open( file )
+        tar.extractall()
+    else:
+        logging.info( "Not a tar file" )
+    
+
+def main():
+    user_data = get_user_data()
+   
+    if user_data.get( 'role' ): 
+        execute_shell("/opt/coreami/bin/puppet_init.sh", errorMessage="cannot call puppet")
+
+    os.chdir( '/opt/' )
+
+    if user_data.get( 'payload' ):
+        file = wget( user_data['payload'] )
+        untar( file ) 
+
+    if user_data.get( 'command' ):
+        execute_shell( user_data['command'], errorMessage="Error running command %s" % user_data['command'] )
+
+
+if __name__ == '__main__':
+    main()

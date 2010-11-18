@@ -1,3 +1,12 @@
+################################################################################
+# CoreAMI provisioning scripts
+################################################################################
+boot_core_ami   Triggered by /etc/rc.local boot_core_ami is used to perform 
+                initial actions based on specified user-data.  It determines 
+                whether or not to run puppet_init.sh(see below), pull down a 
+                payload (which is attempts to decompress), and/or run any 
+                commands which maybe useful for interacting with the payload.
+
 puppet_init.sh  This is the puppet first run script.  By default CoreAMIs are 
                 not configured to start puppet automatically.  So, 
                 puppet_init.sh first attempts to contact the puppet server 5 
@@ -5,6 +14,13 @@ puppet_init.sh  This is the puppet first run script.  By default CoreAMIs are
                 be compiled puppet_init.sh first pulls the base yum repository 
                 then completes a catalog run.   
 
+CloneAMI.sh     Used to create a "frozen" AMI from a CoreAMI that has had a 
+                build deployed with all necessary packages and configurations
+                (for autoscaling)
+
+################################################################################
+# Puppet server related functionality
+################################################################################
 Node_Terminus   Upon a puppetd request to the puppet server, instead of looking
                 to file-based puppet node configuration, Node_Terminus.py
                 queries the AWS REST API for all instances and creates YAML to 
